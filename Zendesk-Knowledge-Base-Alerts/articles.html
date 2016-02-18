@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <h2 align="center"><font face="verdana"> Article published / updated from "{{ v_last_week_date }}" to "{{ v_current_time }}" </font></h2>
+    <style>
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+  {% set check_category_name = 'none' %}
+  {% set found = 1 %}
+  {% for article in articles %}
+  {% set category_name = article.category_name %}
+  {% if category_name != check_category_name %}
+  </table>
+  <p><font face="verdana"><h4>{{ article.category_name }}</h4></font></p>
+      <table style="width= 1500 ;border: 1px solid black;border-collapse: collapse;">
+        <tr>
+          <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Articles</font></th>
+          <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Created Date</font></th>
+          <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Updated Date</font></th>
+        </tr>
+        {% endif %}
+    <tr>
+      <td width="900" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana"><a href="{{ article.html_url }}">{{ article.name }}</a></font></td>
+      <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.created_at }}</font></td>
+      <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.updated_at }}</font></td>
+    </tr>
+        {% if category_name != check_category_name %}
+        {% set check_category_name = category_name %}
+        {% endif %}
+  {% endfor %}
+        </table>
+    </body>
+</html>
