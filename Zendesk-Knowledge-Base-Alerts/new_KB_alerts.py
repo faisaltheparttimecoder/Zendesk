@@ -71,8 +71,8 @@ if __name__ == "__main__":
 # Parameters for authenticating the access to pull the API
 
 
-username = "username@email.com"
-password = "mypassword"
+username = "username"
+password = "password"
 
 
 # Authenticate the username / password here and set it globally
@@ -137,10 +137,9 @@ def fn_send_email(html):
 
     # Sender and receiver email address
 
-    me = "new-articles-alert@noreply.company.com"
+    me = "new-kb-alerts-noreply@pivotal.io"
     # If you want to add multiple receipents then add them like this
-    # you = ["abc@xyz.com", "xyz@abc.com"]
-    you = ["abc@efg.com"]
+    you = ["abc@xyz.com", "xyz@abc.com"]
 
     # Create message container - the correct MIME type is multipart/alternative.
 
@@ -160,7 +159,6 @@ def fn_send_email(html):
     msg.attach(part2)
 
     # Send the message via local SMTP server.
-    # Check Youtube on how to install postfix to configure SMTP on your server
 
     smtplib.SMTP()
     server = smtplib.SMTP('localhost.localdomain')
@@ -178,15 +176,16 @@ def fn_send_email(html):
 # Get all the zendesk API , its manual and this is obtained from
 # https://developer.zendesk.com/rest_api/docs/help_center/articles
 
-# Enter you org URL
+
 v_top_level_url = "https://discuss.zendesk.com"
 
 d_zdapi = {
-"articles" : v_top_level_url + "/api/v2/help_center/articles.json",
-"categories" : v_top_level_url + "/api/v2/help_center/en-us/categories.json",
-"sub_catergories" : v_top_level_url + "/api/v2/help_center/categories/{id}/articles.json",
-"sections" : v_top_level_url + "/api/v2/help_center/sections.json",
-"sub_sections": v_top_level_url + "api/v2/help_center/sections/{id}/articles.json"
+    "users" : v_top_level_url + "/api/v2/users.json",
+    "articles" : v_top_level_url + "/api/v2/help_center/articles.json",
+    "categories" : v_top_level_url + "/api/v2/help_center/en-us/categories.json",
+    "sub_catergories" : v_top_level_url + "/api/v2/help_center/categories/{id}/articles.json",
+    "sections" : v_top_level_url + "/api/v2/help_center/sections.json",
+    "sub_sections": v_top_level_url + "api/v2/help_center/sections/{id}/articles.json"
 }
 
 
@@ -198,22 +197,74 @@ d_zdapi = {
 #           "UnicodeWarning: Unicode equal comparison failed to convert both arguments to Unicode"
 
 
-# Enter categories interested to send alerts
-l_CategoryNames = [
-    "Pivotal Greenplum DB Knowledge Base",
-    "Pivotal Greenplum DB Knowledge Base (Internal)",
-    "Pivotal DCA Knowledge Base",
-    "Pivotal HD Knowledge Base",
-    "Pivotal GemFire Knowledge Base",
-    "Pivotal GemFire XD / SQLFire Knowledge Base",
-    "Pivotal VRP Knowledge Base",
-    "Spring IO Knowledge Base",
-    "Pivotal GPText Knowledge Base",
-    "Pivotal Cloud Foundry® Knowledge Base".decode('utf-8')
-]
+# l_CategoryNames = [
+#     "Pivotal Greenplum DB Knowledge Base",
+#     "Pivotal Greenplum DB Knowledge Base (Internal)",
+#     "Pivotal DCA Knowledge Base",
+#     "Pivotal HD Knowledge Base",
+#     "Pivotal GemFire Knowledge Base",
+#     "Pivotal GemFire XD / SQLFire Knowledge Base",
+#     "Pivotal VRP Knowledge Base",
+#     "Spring IO Knowledge Base",
+#     "Pivotal GPText Knowledge Base",
+#     "Pivotal Cloud Foundry® Knowledge Base".decode('utf-8')
+# ]
 
+l_CategoryNames = [
+    "Knowledge Space"
+    ]
 
 # Step 3:
+# Function : fn_UserInfo
+# This function loops into the Zendesk API to find all the users list that are agents.
+# We then store all those users dictionary on a single list
+
+def fn_UserInfo():
+
+    # Local variables
+
+    l_users = []
+    v_currentpage = 1
+    logger.debug("User list current page: '{}'".format(v_currentpage))
+    headers = {'Content-Type': 'application/json'}
+
+    # Get the API for categories from the d_zdapi mentioned above
+
+    v_pageurl = d_zdapi['users']
+    logger.debug("Users URL: '{}'".format(v_pageurl))
+
+    # The URL changes on every page , the below parameter makes those adjustment
+
+    v_pageurlincrement = v_pageurl + "?page=" + str(v_currentpage)
+    logger.info("Reading Users list URL: '{}'".format(v_pageurlincrement))
+
+    # Loop till we reach the end of the page.
+
+    while v_pageurlincrement != None:
+
+        # Get the data from the url page
+
+        response = zd.get(v_pageurlincrement, headers=headers)
+        data = response.json()
+        # print (fn_json_formatter((data)))
+
+        # Loop through the data obtained from the API and get the user information.
+
+        for d_users in data['users']:
+            l_users.append(d_users)
+            logger.debug("List of Users: '{}'".format("user_name: " + d_users['name'].encode('ascii', 'ignore')))
+            logger.debug("List of Users: '{}'".format("user_id: " + str(d_users['id'])))
+
+        # Increment page
+
+        v_pageurlincrement = data['next_page']
+        logger.info("Reading User list URL: '{}'".format(v_pageurlincrement))
+
+    # Return the list to be used by the rest of the program
+
+    return l_users
+
+# Step 4:
 # Function : get_categories_id
 # This function loops into the Zendesk API to find the categories ID for product that is of interest
 # We then store all those categories dictionary on a single list
@@ -258,7 +309,7 @@ def fn_get_categories_id():
         # we delete descriptions to avoid unnecessary usage of memory due to its content.
 
         for d_categories in data['categories']:
-            if d_categories['name'] in l_CategoryNames:
+            if d_categories['name'] not in l_CategoryNames:
                 del d_categories['description']
                 l_categories.append(d_categories)
                 logger.debug("List of categories: '{}'".format("category_name: " + d_categories['name'].encode('ascii', 'ignore')))
@@ -280,7 +331,7 @@ def fn_get_categories_id():
 # and then pulls the articles all of them on those categories and then stores it onto the list
 
 
-def fn_get_articles_info(categories_id,categories_name):
+def fn_get_articles_info(categories_id, categories_name, l_users):
 
     # Local Variables
 
@@ -329,9 +380,20 @@ def fn_get_articles_info(categories_id,categories_name):
             # was updated (which is of no interest to us) and other inside translation dictionary tells
             # when the documents was changed or re-translated from original content which makes more sense.
 
-            for v_updateddate in d_articles['translations']:
-                v_modifyupdatetime = dateutil.parser.parse(v_updateddate['updated_at'])
-                del v_updateddate['body']
+            for v_translations in d_articles['translations']:
+                v_modifyupdatetime = dateutil.parser.parse(v_translations['updated_at'])
+                v_createdid = v_translations['created_by_id']
+                v_updatedid = v_translations['updated_by_id']
+                del v_translations['body']
+
+                # Now loop through the users list and get the creator and updater username
+                # Have mapping its id.
+
+                for users in l_users:
+                    if v_createdid == users['id']:
+                        d_articles['creator'] = users['name']
+                    if v_updatedid == users['id']:
+                        d_articles['updater'] = users['name']
 
             del d_articles['body']
             d_articles['created_at'] = str(v_modifycreatetime)
@@ -381,6 +443,14 @@ def main():
 
     # Call the function to obtain the category ID's
 
+    logger.info("Start of the function to gather all the agent information")
+
+    l_users = fn_UserInfo()
+
+    logger.debug("End of the function to gather all the agent information")
+
+    # Call the function to obtain the category ID's
+
     logger.info("Start of the function to gather the categories ID")
 
     d_categoryfinal = fn_get_categories_id()
@@ -388,12 +458,19 @@ def main():
     logger.debug("End of the function to gather the categories ID")
 
     # Call the function fn_get_articles_info() to obtain the updated articles in the category obtained above
+    # Also map the creator's and updaters name with each article.
 
     logger.info("Start of the function to gather the articles in category")
 
     for d_category_id in d_categoryfinal:
         logger.info("Pull data for category: '{}'".format(d_category_id['name'].encode('ascii', 'ignore')))
-        l_articles += fn_get_articles_info(d_category_id['id'],d_category_id['name'])
+
+        l_articles += fn_get_articles_info(
+                d_category_id['id'],
+                d_category_id['name'],
+                l_users
+        )
+
         logger.debug("End pulling data from category: '{}'".format(d_category_id['name'].encode('ascii', 'ignore')))
 
     logger.debug("End of the function to gather the articles in category")
@@ -470,7 +547,7 @@ def main():
 
         fn_send_email(v_outputtext)
 
-    # End program message
+    # Start program message
 
     logger.info("End of the program: '{}'".format(__file__))
 
@@ -480,3 +557,4 @@ def main():
 
 
 main()
+
