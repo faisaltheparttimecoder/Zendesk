@@ -22,12 +22,16 @@
           <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Articles</font></th>
           <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Created Date</font></th>
           <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Updated Date</font></th>
+            <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Created By</font></th>
+          <th style="border: 1px solid black;border-collapse: collapse;text-align: left;background-color: black;color: white;"><font face="verdana">Updated By</font></th>
         </tr>
         {% endif %}
     <tr>
       <td width="900" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana"><a href="{{ article.html_url }}">{{ article.name }}</a></font></td>
       <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.created_at }}</font></td>
       <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.updated_at }}</font></td>
+        <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.creator}}</font></td>
+      <td width="300" style="border: 1px solid black;border-collapse: collapse;"><font face="verdana">{{ article.updater }}</font></td>
     </tr>
         {% if category_name != check_category_name %}
         {% set check_category_name = category_name %}
