@@ -374,6 +374,7 @@ def fn_get_articles_info(categories_id, categories_name, l_users):
         for d_articles in data['articles']:
             d_articles['category_id'] = categories_id
             d_articles['category_name'] = categories_name
+            v_createdid = d_articles['author_id']
             v_modifycreatetime = dateutil.parser.parse(d_articles['created_at'])
 
             # NOTE: Zendesk JSON has two "updated_at" field, the main updated_at is the time when the metadata
@@ -382,7 +383,7 @@ def fn_get_articles_info(categories_id, categories_name, l_users):
 
             for v_translations in d_articles['translations']:
                 v_modifyupdatetime = dateutil.parser.parse(v_translations['updated_at'])
-                v_createdid = v_translations['created_by_id']
+                # v_createdid = v_translations['created_by_id']
                 v_updatedid = v_translations['updated_by_id']
                 del v_translations['body']
 
